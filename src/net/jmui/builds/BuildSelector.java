@@ -16,17 +16,14 @@ public class BuildSelector {
 	
 	public void pickBuild() {
 		
-		//leave this as four pool for now as a first build
-		
-		currentBuild = new FourPool();
-		//currentBuild = (FourPool)currentBuild;
-		assert(currentBuild instanceof FourPool);
-		
+		//leave this as double nine gate for now
+		currentBuild = new NineNineGate();
+		assert(currentBuild instanceof NineNineGate);
 	}
 	
 	
 	public void doBuild(Unit myUnit) {
-		
+		currentBuild.getUnit(myUnit);
 	}
 
 	

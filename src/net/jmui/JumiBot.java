@@ -85,23 +85,6 @@ public class JumiBot extends DefaultBWListener {
             }
             
             
-            //select a larva to morph a unit
-            /*if((myUnit.getType() == UnitType.Zerg_Larva) ) {
-
-            	if((self.supplyTotal() - self.supplyUsed() <= 3) && (self.minerals() >= 100)) {
-            		
-            		myUnit.morph(UnitType.Zerg_Overlord);    	
-            		
-            	}
-            	
-            	if(self.minerals() >= 50) {
-            		myUnit.morph(UnitType.Zerg_Drone);
-            	}
-            	
-            	
-            }*/
-
-            
             
             //if it's a worker and it's idle, send it to the closest mineral patch
             if (myUnit.getType().isWorker() && myUnit.isIdle()) {
