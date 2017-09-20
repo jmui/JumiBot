@@ -41,7 +41,7 @@ public class JumiBot extends DefaultBWListener {
     public void onStart() {
         game = mirror.getGame();
         self = game.self();
-        build = new BuildSelector();
+        build = new BuildSelector(self, this);
         //foundEnemyBase = false;
         build.pickBuild();
         //currentStrat = new Test4Pool();
@@ -79,11 +79,8 @@ public class JumiBot extends DefaultBWListener {
         for (Unit myUnit : self.getUnits()) {
             units.append(myUnit.getType()).append(" ").append(myUnit.getTilePosition()).append("\n");
 
-            //if there's enough minerals, train a probe
-            if ((myUnit.getType() == UnitType.Protoss_Nexus) && (self.minerals() >= 50)) {
-                myUnit.train(UnitType.Protoss_Probe);
-            }
-            
+            build.doBuild(myUnit);
+
             
             
             //if it's a worker and it's idle, send it to the closest mineral patch
@@ -130,6 +127,76 @@ public class JumiBot extends DefaultBWListener {
     	bot.run();
         //new JumiBot().run();
     }
+    
+    
+    
+    //get amount of free supply
+    public int getFreeSupply() {
+    	int supply;
+    	supply = self.supplyTotal() - self.supplyUsed();
+    	return supply;
+    }
+    
+    
+    
+	    
+	 // Returns a suitable TilePosition to build a given building type near
+	 // specified TilePosition aroundTile, or null if not found. (builder parameter is our worker)
+	 public TilePosition getBuildTile(Unit builder, UnitType buildingType, TilePosition aroundTile) {
+	 	TilePosition ret = null;
+	 	int maxDist = 3;
+	 	int stopDist = 60;
+	
+	 	// Refinery, Assimilator, Extractor
+	 	if (buildingType.isRefinery()) {
+	 		for (Unit n : game.neutral().getUnits()) {
+	 			if ((n.getType() == UnitType.Resource_Vespene_Geyser) &&
+	 					( Math.abs(n.getTilePosition().getX() - aroundTile.getX()) < stopDist ) &&
+	 					( Math.abs(n.getTilePosition().getY() - aroundTile.getY()) < stopDist )
+	 					) return n.getTilePosition();
+	 		}
+	 	}
+	
+	 	while ((maxDist < stopDist) && (ret == null)) {
+	 		for (int i=aroundTile.getX()-maxDist; i<=aroundTile.getX()+maxDist; i++) {
+	 			for (int j=aroundTile.getY()-maxDist; j<=aroundTile.getY()+maxDist; j++) {
+	 				if (game.canBuildHere(new TilePosition(i,j), buildingType, builder, false)) {
+	 					// units that are blocking the tile
+	 					boolean unitsInWay = false;
+	 					for (Unit u : game.getAllUnits()) {
+	 						if (u.getID() == builder.getID()) continue;
+	 						if ((Math.abs(u.getTilePosition().getX()-i) < 4) && (Math.abs(u.getTilePosition().getY()-j) < 4)) unitsInWay = true;
+	 					}
+	 					if (!unitsInWay && !buildingType.requiresPsi()) {
+	 						return new TilePosition(i, j);
+	 					}
+	 					
+						// check if area is powered by a pylon for non pylons and non assimilators
+						if (buildingType.requiresPsi()) {
+							boolean psiMissing = false;
+							for (int k=i; k<=i+buildingType.tileWidth(); k++) {
+								for (int l=j; l<=j+buildingType.tileHeight(); l++) {
+									if (!game.hasPower(k, l)) psiMissing = true;
+									break;
+								}
+							}
+							if (psiMissing) continue;
+							
+							if(!psiMissing) {
+								return new TilePosition(i, j);
+							}
+						}
+	 				}
+	 			}
+	 		}
+	 		maxDist += 2;
+	 	}
+	
+	 	if (ret == null) game.printf("Unable to find suitable build position for "+buildingType.toString());
+
+	 	return ret;
+	 }
+    
     
     
 }
