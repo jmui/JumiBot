@@ -41,7 +41,7 @@ public class JumiBot extends DefaultBWListener {
     public void onStart() {
         game = mirror.getGame();
         self = game.self();
-        build = new BuildSelector(self, this);
+        build = new BuildSelector(self, this, game);
         //foundEnemyBase = false;
         build.pickBuild();
         //currentStrat = new Test4Pool();

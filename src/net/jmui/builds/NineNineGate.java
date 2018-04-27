@@ -19,12 +19,15 @@ import net.jmui.JumiBot;
 
 public class NineNineGate extends DefaultBuild{
 	private Unit myUnit;
+	private Unit currUnit;
 	private Player self;
 	private JumiBot bot;
+	private Game game;
 	private TilePosition tilePos;
 	private TilePosition myStartLoc;
 	//private TilePosition myNexusPos;
 	private TilePosition firstPylonPos;
+	private int step;
 	private int probeCount;
 	private int gateCount;
 	private int zealotCount;
@@ -34,10 +37,13 @@ public class NineNineGate extends DefaultBuild{
 	private boolean buildingGate;
 	private boolean finishedGates;
 	private boolean pylonStarted;
+	private boolean foundPos;
 	
-	public NineNineGate(Player self, JumiBot bot) {
+	public NineNineGate(Player self, JumiBot bot, Game game) {
 		this.self = self;
 		this.bot = bot;
+		this.game = game;
+		step = 0;
 		probeCount = 4;
 		gateCount = 0;
 		zealotCount = 0;
@@ -47,7 +53,8 @@ public class NineNineGate extends DefaultBuild{
 		buildingGate = false;
 		firstPylonPos = null;
 		finishedGates = false;
-		pylonStarted = false;
+		foundPos = false;
+		pylonStarted = false;	//don't need later
 		myStartLoc = self.getStartLocation();
 	}
 	
@@ -62,6 +69,158 @@ public class NineNineGate extends DefaultBuild{
 	
 	@Override
 	public void continueBuild() {
+		
+		
+		switch (step) {
+		
+			case 0:	//2 probes
+				if((myUnit.getType() == UnitType.Protoss_Nexus) && (self.minerals() >= 50) && (probeCount < 8)) {
+					myUnit.train(UnitType.Protoss_Probe);
+					probeCount++;
+				}
+				
+				if(probeCount == 8) {
+					step++;
+				}
+				
+				break;
+			
+				
+				
+			case 1:	//8 pylon, 1 probe
+				if((myUnit.getType() == UnitType.Protoss_Probe) && (!buildingPylon) && self.minerals() >= 100) {
+					tilePos = bot.getBuildTile(myUnit, UnitType.Protoss_Pylon, myStartLoc);
+					
+					if(tilePos != null) {
+						System.out.println("Building first pylon");
+						myUnit.build(UnitType.Protoss_Pylon, tilePos);
+						firstPylonPos = tilePos;
+						buildingPylon = true;
+
+						//set currUnit to pylon
+						/*for(Unit curr : self.getUnits()) {
+							System.out.println("^^^^^^^^^^^^^^^^");
+							if(curr.getType() == UnitType.Protoss_Pylon) {	
+								System.out.println("************************ " );
+								currUnit = curr;
+								pylonStarted = true;
+								break;
+							}
+						}*/
+		
+					} else if(tilePos == null){
+						System.out.println("tilePos is null for pylon");
+					}
+					
+				}
+
+
+				if(myUnit.getType() == UnitType.Protoss_Pylon && buildingPylon) {
+					pylonStarted = true;
+					System.out.println("************************ " + probeCount);
+					
+				}
+				
+				
+				
+				//train probe 9
+				if(pylonStarted && myUnit.getType() == UnitType.Protoss_Nexus && self.minerals() >= 50 && probeCount < 9) {	
+					myUnit.train(UnitType.Protoss_Probe);
+					probeCount++;
+					step++;
+				}
+				
+				//continue when pylon is done building
+				/*if(probeCount == 9 && currUnit.isCompleted()) {
+					step++;
+				}		*/	
+				
+				break;
+				
+			
+				
+			case 2:	//9 gate #1
+				//System.out.println("step 2 ******");
+				if(myUnit.getType() == UnitType.Protoss_Pylon && !foundPos) {
+					if(myUnit.isConstructing() == false) {
+						firstPylonPos = myUnit.getTilePosition();
+						foundPos = true;
+					}
+				}
+				
+				
+				if(myUnit.getType() == UnitType.Protoss_Probe && game.canMake(UnitType.Protoss_Gateway, myUnit) && gateCount == 0 && foundPos) {
+					tilePos = bot.getBuildTile(myUnit,  UnitType.Protoss_Gateway, firstPylonPos);
+					
+					if(tilePos != null) {
+						System.out.println("building gateway");
+						myUnit.build(UnitType.Protoss_Gateway);
+						gateCount++;
+					}		
+				}
+				
+				//check that gate started building
+				for(Unit curr : self.getUnits()) {
+					if(curr.getType() == UnitType.Protoss_Gateway) {
+						//gateCount++;
+						step++;
+						break;
+					}
+				}			
+				
+				break;
+				
+				
+				
+				
+				
+			case 3: //9 gate #2
+				System.out.println("step 3 ******");
+				//int currGateCount = 0;
+				
+				if(myUnit.getType() == UnitType.Protoss_Probe && game.canMake(UnitType.Protoss_Gateway, myUnit) && gateCount == 1) {
+					tilePos = bot.getBuildTile(myUnit,  UnitType.Protoss_Gateway, firstPylonPos);
+					
+					if(tilePos != null) {
+						myUnit.build(UnitType.Protoss_Gateway);
+						gateCount++;
+					}		
+				}
+				
+				//check that both gates started building
+			/*	for(Unit curr : self.getUnits()) {
+					if(curr.getType() == UnitType.Protoss_Gateway) {
+						currGateCount++;
+						if(currGateCount == 2) {
+							break;
+						}
+					}
+				}		*/	
+							
+				break;
+				
+				
+				
+				
+				
+			case 4:
+				
+				
+				
+				break;
+				
+				
+			default:
+				//continue training units after build is finished
+				break;
+		
+		}
+		
+		
+		
+		
+		
+		/*
 		
 		
 		if((myUnit.getType() == UnitType.Protoss_Nexus) && (self.minerals() >= 50) && (probeCount < 8) && (!myUnit.isTraining())) {
@@ -94,13 +253,13 @@ public class NineNineGate extends DefaultBuild{
 			} 
 
 			
-		} else if (/*(!firstPylon) && (buildingPylon) && (firstPylonPos != null)*/(pylonStarted) && (myUnit.getType() == UnitType.Protoss_Nexus) && (self.minerals() >= 50) && (probeCount <= 9) && (!myUnit.isTraining())) {		
+		} else if ((!firstPylon) && (buildingPylon) && (firstPylonPos != null)(pylonStarted) && (myUnit.getType() == UnitType.Protoss_Nexus) && (self.minerals() >= 50) && (probeCount <= 9) && (!myUnit.isTraining())) {		
 			
 			if(probeCount < 9) {
 				myUnit.train(UnitType.Protoss_Probe);
 				probeCount++;
 			}
-			
+
 			if(buildingPylon) {
 				for(Unit currUnit : self.getUnits()) {
 					if(currUnit.getType() == UnitType.Protoss_Pylon) {
@@ -112,6 +271,8 @@ public class NineNineGate extends DefaultBuild{
 					}
 				}
 			}
+
+			
 			
 		} else if ((probeCount == 9) && (myUnit.getType() == UnitType.Protoss_Probe) && (gateCount < 1) &&  (firstPylon)){
 			
@@ -170,8 +331,9 @@ public class NineNineGate extends DefaultBuild{
 				}
 			}
 			System.out.println(finishedGates + " gate count " + gateCount + " probe count " + probeCount);
-		} else if((finishedGates) && (probeCount <= 11) && (myUnit.getType() == UnitType.Protoss_Nexus)){
 			
+		} else if((finishedGates) && (probeCount <= 11) && (myUnit.getType() == UnitType.Protoss_Nexus)){
+			//************************************************************************************************************************************************************
 			System.out.println(finishedGates + " ^^^^^^^^^^^^^^ probe count " + probeCount + " unit type " + myUnit.getType().toString() + " minerals " + self.minerals() );
 			if(self.minerals() >= 50) {
 				//System.out.println("PROBE");
@@ -180,8 +342,14 @@ public class NineNineGate extends DefaultBuild{
 				probeCount++;
 			}
 			
-			 
-		} /*else if((probeCount == 11) && (finishedGates) && (gateCount == 2)) {
+			
+			
+
+		} */
+		
+		 //************************************************************************************************************************************************************
+		
+		/*else if((probeCount == 11) && (finishedGates) && (gateCount == 2)) {
 			System.out.println("&&&&&&&&&&&");
 			buildingPylon = false;
 			
